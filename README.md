@@ -1,3 +1,7 @@
+<h1>READ ME FIRST</h1>
+
+> THIS IS NOT FINAL, IT USES IN PROGRESS V2 OF ERELA.JS
+
 <div align = "center">
     <a href="https://discord.gg/D6FXw55">
 <img src="https://img.shields.io/discord/653436871858454538?color=7289DA&label=Support&logo=discord&style=for-the-badge" alt="Discord">
@@ -23,7 +27,7 @@
 <hr>
 </div>
 
-> <h2>READ ME</h2>
+> <h2>Note:</h2>
 > This uses modified code from <https://github.com/takomst/spotilink> to work directly with Erela.JS as a plugin.
 
 This a plugin for Erela.JS to allow the use of Spotify, it uses direct URL's being tracks, albums, and playlists.
@@ -58,7 +62,7 @@ yarn add erela.js-spotify
 
 ## Example Usage
 
-> <h2>READ ME</h2>
+> <h2>Note:</h2>
 > This assumes you already have Erela.JS setup. Refer to the [guides](#documentation--guides) to start.
 >
 > This is also part of the code, it only shows using the plugin.
