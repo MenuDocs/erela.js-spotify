@@ -2,5 +2,6 @@ node_modules
 src
 .idea
 
+.gitattributes
 tsconfig.json
 package-lock.json
