@@ -13,7 +13,8 @@ const buildSearch = (loadType: LoadType, tracks: Track[], error: string, name: s
     tracks: tracks ?? [],
     playlist: name ? {
         name,
-        duration: tracks.map(track => track.duration)
+        duration: tracks
+            .map(track => track.duration)
             .reduce((acc: number, cur: number) => acc + cur, 0)
     } : undefined,
     exception: {
@@ -23,14 +24,14 @@ const buildSearch = (loadType: LoadType, tracks: Track[], error: string, name: s
 });
 
 export class Spotify extends Plugin {
-    private clientID: string;
-    private clientSecret: string;
+    private readonly clientID: string;
+    private readonly clientSecret: string;
     private readonly authorization: string;
     private token: string;
     private readonly options: { headers: { Authorization: string; "Content-Type": string } };
     private _search: (query: string | Query, requester?: unknown) => Promise<SearchResult>;
     private manager: Manager;
-    private functions: Record<string, Function>;
+    private readonly functions: Record<string, Function>;
 
     public constructor(options: SpotifyOptions) {
         if (!options || !TEMPLATE.every(t => t in options && typeof options[t] === "string"))
@@ -66,7 +67,7 @@ export class Spotify extends Plugin {
 
     private async search(query: string | Query, requester?: unknown): Promise<SearchResult> {
         const finalQuery = (query as Query).query || query as string;
-        const [, type, id] = REGEX.test(finalQuery) ? finalQuery.match(REGEX) : []
+        const [, type, id] = REGEX.test(finalQuery) ? finalQuery.match(REGEX) : [];
 
         if (type in this.functions) {
             try {
@@ -79,7 +80,8 @@ export class Spotify extends Plugin {
                     return buildSearch(loadType, data.tracks.map(track => TrackUtils.build(track, requester)), null, name);
                 }
 
-                throw new Error('Incorrect type for Spotify URL, must be one of "track", "album", "playlist".');
+                const msg = 'Incorrect type for Spotify URL, must be one of "track", "album", "playlist".';
+                return buildSearch("LOAD_FAILED", null, msg, null);
             } catch (e) {
                 return buildSearch("LOAD_FAILED", null, e.message, null);
             }
@@ -123,7 +125,7 @@ export class Spotify extends Plugin {
         if (!node) throw new Error("No available node.");
 
         const { host, port, password, secure } = node.options;
-        const url = `http${secure ? "s" : ""}://${host}:${port}/loadtracks`
+        const url = `http${secure ? "s" : ""}://${host}:${port}/loadtracks`;
 
         const { data } = await Axios.get<LavalinkResult>(url, {
             headers: { Authorization: password },
