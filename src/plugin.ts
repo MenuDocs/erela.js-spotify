@@ -60,7 +60,7 @@ export class Spotify extends Plugin {
 
     public load(manager: Manager) {
         this.manager = manager;
-        this._search = manager.search;
+        this._search = manager.search.bind(manager);
         manager.search = this.search.bind(this);
     }
 
