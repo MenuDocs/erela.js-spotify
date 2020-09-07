@@ -28,7 +28,7 @@
 </div>
 
 > <h2>Note:</h2>
-> This uses modified code from [takomst/spotilink](https://github.com/takomst/spotilink 'spotilink') to work directly with Erela.JS as a plugin.
+> This uses modified code from <a href="https://github.com/takomst/spotilink">takomst/spotilink</a> to work directly with Erela.JS as a plugin.
 
 This a plugin for Erela.JS to allow the use of Spotify, it uses direct URL's being tracks, albums, and playlists.
 
