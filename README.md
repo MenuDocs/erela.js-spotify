@@ -28,7 +28,7 @@
 </div>
 
 > <h2>Note:</h2>
-> This uses modified code from <https://github.com/takomst/spotilink> to work directly with Erela.JS as a plugin.
+> This uses modified code from [takomst/spotilink](https://github.com/takomst/spotilink 'spotilink') to work directly with Erela.JS as a plugin.
 
 This a plugin for Erela.JS to allow the use of Spotify, it uses direct URL's being tracks, albums, and playlists.
 
@@ -71,12 +71,12 @@ yarn add erela.js-spotify
 const { Manager } = require("erela.js");
 const Spotify  = require("erela.js-spotify");
 
-const clientID = "" // clientID from your Spotify app
-const clientSecret = "" // clientSecret from your Spotify app
+const clientID = ""; // clientID from your Spotify app
+const clientSecret = ""; // clientSecret from your Spotify app
 
 const manager = new Manager({
   plugins: [ new Spotify({ clientID, clientSecret }) ]
-})
+});
 
-manager.search("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC")
+manager.search("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
 ```
