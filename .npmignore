@@ -2,6 +2,10 @@ node_modules
 src
 .idea
 
+package-lock.json
+tsconfig.json
+.npmignore
+.gitignore
 .gitattributes
 tsconfig.json
 package-lock.json
