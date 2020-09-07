@@ -63,7 +63,7 @@ yarn add erela.js-spotify
 ## Example Usage
 
 > <h2>Note:</h2>
-> This assumes you already have Erela.JS setup. Refer to the [guides](#documentation--guides) to start.
+> This assumes you already have Erela.JS setup. Refer to the <a href="#documentation--guides">guides</a> to start.
 >
 > This is also part of the code, it only shows using the plugin.
 
