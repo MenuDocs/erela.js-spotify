@@ -27,7 +27,7 @@
 <hr>
 </div>
 
-> <h2>Note:</h2>
+<h3>Note:</h3>
 > This uses modified code from <a href="https://github.com/takomst/spotilink">takomst/spotilink</a> to work directly with Erela.JS as a plugin.
 
 This a plugin for Erela.JS to allow the use of Spotify, it uses direct URL's being tracks, albums, and playlists.
@@ -62,7 +62,7 @@ yarn add erela.js-spotify
 
 ## Example Usage
 
-> <h2>Note:</h2>
+<h3>Note:</h3>
 > This assumes you already have Erela.JS setup. Refer to the <a href="#documentation--guides">guides</a> to start.
 >
 > This is also part of the code, it only shows using the plugin.

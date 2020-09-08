@@ -1,9 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
-    "paths": {
-      "dep": ["src/typings/dep"] // That location is a example but you need to point that at where your dep.d.ts file is
-    },
     /* Basic Options */
     "target": "es6",
     "module": "commonjs",

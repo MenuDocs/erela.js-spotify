@@ -1,6 +1,7 @@
 node_modules
 src
 .idea
+.github
 
 package-lock.json
 tsconfig.json

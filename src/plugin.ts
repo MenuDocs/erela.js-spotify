@@ -16,11 +16,11 @@ const buildSearch = (loadType: LoadType, tracks: Track[], error: string, name: s
         duration: tracks
             .map(track => track.duration)
             .reduce((acc: number, cur: number) => acc + cur, 0)
-    } : undefined,
-    exception: {
+    } : null,
+    exception: error ? {
         message: error,
         severity: "COMMON"
-    },
+    } : null,
 });
 
 export class Spotify extends Plugin {
@@ -77,13 +77,15 @@ export class Spotify extends Plugin {
                     const data = await func(id);
                     const loadType = type === "track" ? "TRACK_LOADED" : "PLAYLIST_LOADED";
                     const name = ["playlist", "album"].includes(type) ? data.name : null;
-                    return buildSearch(loadType, data.tracks.map(track => TrackUtils.build(track, requester)), null, name);
+                    const tracks = data.tracks.map(track => TrackUtils.build(track, requester));
+
+                    return buildSearch(loadType, tracks, null, name);
                 }
 
                 const msg = 'Incorrect type for Spotify URL, must be one of "track", "album", "playlist".';
                 return buildSearch("LOAD_FAILED", null, msg, null);
             } catch (e) {
-                return buildSearch("LOAD_FAILED", null, e.message, null);
+                return buildSearch(e.loadType ?? "LOAD_FAILED", null, e.message ?? null, null);
             }
         }
 
@@ -91,28 +93,41 @@ export class Spotify extends Plugin {
     }
 
     private async getAlbumTracks(id: string): Promise<Result> {
-        const { data }: { data: Album } = await Axios.get(`${BASE_URL}/albums/${id}`, this.options);
+        const { data } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.options);
+        const promises = data.tracks.items.map(async item => await this.fetchTrack(item));
+        const tracks = (await Promise.all(promises)).filter(e => !!e);
+
+        if (!tracks.length) throw { loadType: "NO_MATCHES" };
+
         return {
-            tracks: await Promise.all(data.tracks.items.map(async item => await this.fetchTrack(item))),
+            tracks,
             name: data.name
         };
     }
 
     private async getPlaylistTracks(id: string): Promise<Result> {
-        const { data }: { data: PlaylistItems } = await Axios.get(`${BASE_URL}/playlists/${id}`, this.options);
+        const { data } = await Axios.get<PlaylistItems>(`${BASE_URL}/playlists/${id}`, this.options);
+        const promises = data.tracks.items.map(async item => await this.fetchTrack(item.track));
+        const tracks = (await Promise.all(promises)).filter(e => !!e);
+
+        if (!tracks.length) throw { loadType: "NO_MATCHES" };
 
         return {
-            tracks: await Promise.all(data.tracks.items.map(async item => await this.fetchTrack(item.track))),
+            tracks,
             name: data.name
         };
     }
 
     private async getTrack(id: string): Promise<Result> {
-        const { data }: { data: SpotifyTrack } = await Axios.get(`${BASE_URL}/tracks/${id}`, this.options);
-        return { tracks: [ await this.fetchTrack(data) ] };
+        const { data } = await Axios.get<SpotifyTrack>(`${BASE_URL}/tracks/${id}`, this.options);
+        const track = await this.fetchTrack(data);
+
+        if (!track) throw { loadType: "NO_MATCHES" };
+
+        return { tracks: [ track ] };
     }
 
-    private async fetchTrack(track: SpotifyTrack): Promise<TrackData> {
+    private async fetchTrack(track: SpotifyTrack): Promise<TrackData|null> {
         if (!track) throw new ReferenceError("The Spotify track object was not provided");
         if (!track.artists) throw new ReferenceError("The track artists array was not provided");
         if (!track.name) throw new ReferenceError("The track name was not provided");
@@ -132,7 +147,7 @@ export class Spotify extends Plugin {
             params: { identifier: `ytsearch:${title}` }
         });
 
-        if (data.loadType === "LOAD_FAILED") throw data;
+        if (["LOAD_FAILED", "NO_MATCHES"].includes(data.loadType)) return null;
 
         const regexEscape = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
