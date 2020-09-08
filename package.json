@@ -6,7 +6,11 @@
   "scripts": {
     "build": "rm -rf ./dist && tsc"
   },
-  "keywords": [],
+  "keywords": [
+    "erela.js",
+    "spotify",
+    "plugin"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {

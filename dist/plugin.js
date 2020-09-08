@@ -26,11 +26,11 @@ const buildSearch = (loadType, tracks, error, name) => ({
         duration: tracks
             .map(track => track.duration)
             .reduce((acc, cur) => acc + cur, 0)
-    } : undefined,
-    exception: {
+    } : null,
+    exception: error ? {
         message: error,
         severity: "COMMON"
-    },
+    } : null,
 });
 class Spotify extends erela_js_1.Plugin {
     constructor(options) {
@@ -60,6 +60,7 @@ class Spotify extends erela_js_1.Plugin {
         manager.search = this.search.bind(this);
     }
     search(query, requester) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const finalQuery = query.query || query;
             const [, type, id] = REGEX.test(finalQuery) ? finalQuery.match(REGEX) : [];
@@ -70,13 +71,14 @@ class Spotify extends erela_js_1.Plugin {
                         const data = yield func(id);
                         const loadType = type === "track" ? "TRACK_LOADED" : "PLAYLIST_LOADED";
                         const name = ["playlist", "album"].includes(type) ? data.name : null;
-                        return buildSearch(loadType, data.tracks.map(track => erela_js_1.TrackUtils.build(track, requester)), null, name);
+                        const tracks = data.tracks.map(track => erela_js_1.TrackUtils.build(track, requester));
+                        return buildSearch(loadType, tracks, null, name);
                     }
                     const msg = 'Incorrect type for Spotify URL, must be one of "track", "album", "playlist".';
                     return buildSearch("LOAD_FAILED", null, msg, null);
                 }
                 catch (e) {
-                    return buildSearch("LOAD_FAILED", null, e.message, null);
+                    return buildSearch((_a = e.loadType) !== null && _a !== void 0 ? _a : "LOAD_FAILED", null, (_b = e.message) !== null && _b !== void 0 ? _b : null, null);
                 }
             }
             return this._search(query, requester);
@@ -85,8 +87,12 @@ class Spotify extends erela_js_1.Plugin {
     getAlbumTracks(id) {
         return __awaiter(this, void 0, void 0, function* () {
             const { data } = yield axios_1.default.get(`${BASE_URL}/albums/${id}`, this.options);
+            const promises = data.tracks.items.map((item) => __awaiter(this, void 0, void 0, function* () { return yield this.fetchTrack(item); }));
+            const tracks = (yield Promise.all(promises)).filter(e => !!e);
+            if (!tracks.length)
+                throw { loadType: "NO_MATCHES" };
             return {
-                tracks: yield Promise.all(data.tracks.items.map((item) => __awaiter(this, void 0, void 0, function* () { return yield this.fetchTrack(item); }))),
+                tracks,
                 name: data.name
             };
         });
@@ -94,8 +100,12 @@ class Spotify extends erela_js_1.Plugin {
     getPlaylistTracks(id) {
         return __awaiter(this, void 0, void 0, function* () {
             const { data } = yield axios_1.default.get(`${BASE_URL}/playlists/${id}`, this.options);
+            const promises = data.tracks.items.map((item) => __awaiter(this, void 0, void 0, function* () { return yield this.fetchTrack(item.track); }));
+            const tracks = (yield Promise.all(promises)).filter(e => !!e);
+            if (!tracks.length)
+                throw { loadType: "NO_MATCHES" };
             return {
-                tracks: yield Promise.all(data.tracks.items.map((item) => __awaiter(this, void 0, void 0, function* () { return yield this.fetchTrack(item.track); }))),
+                tracks,
                 name: data.name
             };
         });
@@ -103,7 +113,10 @@ class Spotify extends erela_js_1.Plugin {
     getTrack(id) {
         return __awaiter(this, void 0, void 0, function* () {
             const { data } = yield axios_1.default.get(`${BASE_URL}/tracks/${id}`, this.options);
-            return { tracks: [yield this.fetchTrack(data)] };
+            const track = yield this.fetchTrack(data);
+            if (!track)
+                throw { loadType: "NO_MATCHES" };
+            return { tracks: [track] };
         });
     }
     fetchTrack(track) {
@@ -128,8 +141,8 @@ class Spotify extends erela_js_1.Plugin {
                 headers: { Authorization: password },
                 params: { identifier: `ytsearch:${title}` }
             });
-            if (data.loadType === "LOAD_FAILED")
-                throw data;
+            if (["LOAD_FAILED", "NO_MATCHES"].includes(data.loadType))
+                return null;
             const regexEscape = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const originalAudio = data.tracks.filter(searchResult => {
                 return [track.artists[0].name, `${track.artists[0].name} - Topic`].some(channelName => new RegExp(`^${regexEscape(channelName)}$`, "i").test(searchResult.info.author)) ||
