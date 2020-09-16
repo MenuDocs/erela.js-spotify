@@ -23,20 +23,6 @@ export interface Result {
     tracks: TrackData[];
     name?: string;
 }
-export interface LavalinkResult {
-    tracks: TrackData[];
-    loadType: string;
-    exception?: {
-        /** The message for the exception. */
-        message: string;
-        /** The severity of exception. */
-        severity: string;
-    };
-    playlistInfo: {
-        name: string;
-        selectedTrack?: number;
-    };
-}
 export interface SpotifyOptions {
     clientID: string;
     clientSecret: string;

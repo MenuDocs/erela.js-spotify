@@ -19,6 +19,6 @@
   },
   "dependencies": {
     "axios": "^0.20.0",
-    "erela.js": "^2.0.0-beta.5"
+    "erela.js": "^2.0.0"
   }
 }
