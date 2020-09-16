@@ -1,7 +1,3 @@
-<h1>READ ME FIRST</h1>
-
-> THIS IS NOT FINAL, IT USES IN PROGRESS V2 OF ERELA.JS
-
 <div align = "center">
     <a href="https://discord.gg/D6FXw55">
 <img src="https://img.shields.io/discord/653436871858454538?color=7289DA&label=Support&logo=discord&style=for-the-badge" alt="Discord">
