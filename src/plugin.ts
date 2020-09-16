@@ -1,6 +1,6 @@
 import { Manager, Plugin, TrackUtils } from "erela.js";
 import { LoadType, TrackData } from "erela.js/structures/Utils";
-import { Query, SearchResult } from "erela.js/structures/Manager";
+import { LavalinkResult, Query, SearchResult } from "erela.js/structures/Manager";
 import { Track } from "erela.js/structures/Player";
 import Axios from "axios";
 
@@ -192,21 +192,6 @@ export class Spotify extends Plugin {
 export interface Result {
     tracks: TrackData[];
     name?: string;
-}
-
-export interface LavalinkResult {
-    tracks: TrackData[];
-    loadType: string;
-    exception?: {
-        /** The message for the exception. */
-        message: string;
-        /** The severity of exception. */
-        severity: string;
-    };
-    playlistInfo: {
-        name: string;
-        selectedTrack?: number;
-    }
 }
 
 export interface SpotifyOptions {
