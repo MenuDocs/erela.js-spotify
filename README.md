@@ -24,9 +24,10 @@
 </div>
 
 <h3>Note:</h3>
+
 > This uses modified code from <a href="https://github.com/takomst/spotilink">takomst/spotilink</a> to work directly with Erela.JS as a plugin.
 
-This a plugin for Erela.JS to allow the use of Spotify, it uses direct URL's being tracks, albums, and playlists.
+This a plugin for Erela.JS to allow the use of Spotify URL's, it uses direct URL's being tracks, albums, and playlists.
 
 - https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC
 - https://open.spotify.com/album/6N9PS4QXF1D0OWPk0Sxtb4
@@ -59,6 +60,7 @@ yarn add erela.js-spotify
 ## Example Usage
 
 <h3>Note:</h3>
+
 > This assumes you already have Erela.JS setup. Refer to the <a href="#documentation--guides">guides</a> to start.
 >
 > This is also part of the code, it only shows using the plugin.
