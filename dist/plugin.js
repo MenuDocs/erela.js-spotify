@@ -17,7 +17,7 @@ const erela_js_1 = require("erela.js");
 const axios_1 = __importDefault(require("axios"));
 const TEMPLATE = ["clientID", "clientSecret"];
 const BASE_URL = "https://api.spotify.com/v1";
-const REGEX = /https:\/\/open\.spotify\.com\/(.+)\/([A-Za-z0-9]+)/;
+const REGEX = /(?:https:\/\/open\.spotify\.com\/|spotify:)(.+)(?:[\/:])([A-Za-z0-9]+)/;
 const buildSearch = (loadType, tracks, error, name) => ({
     loadType: loadType,
     tracks: tracks !== null && tracks !== void 0 ? tracks : [],
