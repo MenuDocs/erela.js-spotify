@@ -1,21 +1,23 @@
 import { Manager, Plugin, TrackUtils } from "erela.js";
-import { LoadType, TrackData } from "erela.js/structures/Utils";
-import { LavalinkResult, Query, SearchResult } from "erela.js/structures/Manager";
-import { Track } from "erela.js/structures/Player";
+import { LoadType, UnresolvedQuery } from "erela.js/structures/Utils";
+import { Query } from "erela.js/structures/Manager";
+import { UnresolvedTrack } from "erela.js/structures/Player";
 import Axios from "axios";
 
 const TEMPLATE = [ "clientID", "clientSecret" ];
 const BASE_URL = "https://api.spotify.com/v1";
 const REGEX = /(?:https:\/\/open\.spotify\.com\/|spotify:)(.+)(?:[\/:])([A-Za-z0-9]+)/;
 
-const buildSearch = (loadType: LoadType, tracks: Track[], error: string, name: string): SearchResult => ({
+const buildSearch = (loadType: LoadType, tracks: UnresolvedTrack[], error: string, name: string): SearchResult => ({
     loadType: loadType,
     tracks: tracks ?? [],
     playlist: name ? {
         name,
         duration: tracks
-            .map(track => track.duration)
-            .reduce((acc: number, cur: number) => acc + cur, 0)
+            .reduce(
+                (acc: number, cur: UnresolvedTrack) => acc + (cur.duration || 0),
+                0
+            ),
     } : null,
     exception: error ? {
         message: error,
@@ -67,17 +69,18 @@ export class Spotify extends Plugin {
 
     private async search(query: string | Query, requester?: unknown): Promise<SearchResult> {
         const finalQuery = (query as Query).query || query as string;
-        const [, type, id] = REGEX.test(finalQuery) ? finalQuery.match(REGEX) : [];
+        const [, type, id] = finalQuery.match(REGEX) ?? [];
 
         if (type in this.functions) {
             try {
                 const func = this.functions[type];
 
                 if (func) {
-                    const data = await func(id);
+                    const data: Result = await func(id);
+
                     const loadType = type === "track" ? "TRACK_LOADED" : "PLAYLIST_LOADED";
                     const name = ["playlist", "album"].includes(type) ? data.name : null;
-                    const tracks = data.tracks.map(track => TrackUtils.build(track, requester));
+                    const tracks = data.tracks.map(track => TrackUtils.buildUnresolved(track, requester));
 
                     return buildSearch(loadType, tracks, null, name);
                 }
@@ -94,74 +97,34 @@ export class Spotify extends Plugin {
 
     private async getAlbumTracks(id: string): Promise<Result> {
         const { data } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.options);
-        const promises = data.tracks.items.map(async item => await this.fetchTrack(item));
-        const tracks = (await Promise.all(promises)).filter(e => !!e);
-
-        if (!tracks.length) throw { loadType: "NO_MATCHES" };
-
-        return {
-            tracks,
-            name: data.name
-        };
+        const tracks = data.tracks.items.map(item => Spotify.convertToUnresolved(item));
+        return { tracks, name: data.name };
     }
 
     private async getPlaylistTracks(id: string): Promise<Result> {
         const { data } = await Axios.get<PlaylistItems>(`${BASE_URL}/playlists/${id}`, this.options);
-        const promises = data.tracks.items.map(async item => await this.fetchTrack(item.track));
-        const tracks = (await Promise.all(promises)).filter(e => !!e);
-
-        if (!tracks.length) throw { loadType: "NO_MATCHES" };
-
-        return {
-            tracks,
-            name: data.name
-        };
+        const tracks = data.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
+        return { tracks, name: data.name };
     }
 
     private async getTrack(id: string): Promise<Result> {
         const { data } = await Axios.get<SpotifyTrack>(`${BASE_URL}/tracks/${id}`, this.options);
-        const track = await this.fetchTrack(data);
-
-        if (!track) throw { loadType: "NO_MATCHES" };
-
+        const track = await Spotify.convertToUnresolved(data);
         return { tracks: [ track ] };
     }
 
-    private async fetchTrack(track: SpotifyTrack): Promise<TrackData|null> {
+    private static convertToUnresolved(track: SpotifyTrack): UnresolvedQuery {
         if (!track) throw new ReferenceError("The Spotify track object was not provided");
         if (!track.artists) throw new ReferenceError("The track artists array was not provided");
         if (!track.name) throw new ReferenceError("The track name was not provided");
         if (!Array.isArray(track.artists)) throw new TypeError(`The track artists must be an array, received type ${typeof track.artists}`);
         if (typeof track.name !== "string") throw new TypeError(`The track name must be a string, received type ${typeof track.name}`);
 
-        const title = `${track.artists[0].name} - ${track.name}`;
-
-        const node = this.manager.leastUsedNodes.first();
-        if (!node) throw new Error("No available node.");
-
-        const { host, port, password, secure } = node.options;
-        const url = `http${secure ? "s" : ""}://${host}:${port}/loadtracks`;
-
-        const { data } = await Axios.get<LavalinkResult>(url, {
-            headers: { Authorization: password },
-            params: { identifier: `ytsearch:${title}` }
-        });
-
-        if (["LOAD_FAILED", "NO_MATCHES"].includes(data.loadType)) return null;
-
-        const regexEscape = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-        const originalAudio = data.tracks.filter(searchResult => {
-            return [track.artists[0].name, `${track.artists[0].name} - Topic`].some(channelName => new RegExp(`^${regexEscape(channelName)}$`, "i").test(searchResult.info.author)) ||
-                new RegExp(`^${regexEscape(track.name)}$`, "i").test(searchResult.info.title);
-        })[0];
-
-        if (originalAudio) return originalAudio;
-
-        const sameDuration = data.tracks.filter(searchResult => (searchResult.info.length >= (track.duration_ms - 1500)) && (searchResult.info.length <= (track.duration_ms + 1500)))[0];
-        if (sameDuration) return sameDuration;
-
-        return data.tracks[0];
+        return {
+            title: track.name,
+            artist: track.artists[0].name,
+            duration: track.duration_ms,
+        }
     }
 
     private async renewToken(): Promise<number> {
@@ -190,7 +153,7 @@ export class Spotify extends Plugin {
 }
 
 export interface Result {
-    tracks: TrackData[];
+    tracks: UnresolvedTrack[];
     name?: string;
 }
 
@@ -225,4 +188,17 @@ export interface SpotifyTrack {
     artists: Artist[];
     name: string;
     duration_ms: number;
+}
+
+export interface SearchResult {
+    exception?: {
+        severity: string;
+        message: string
+    };
+    loadType: string;
+    playlist?: {
+        duration: number;
+        name: string
+    };
+    tracks: UnresolvedTrack[]
 }
