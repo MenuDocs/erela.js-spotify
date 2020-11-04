@@ -1,7 +1,12 @@
-import { Manager, Plugin, TrackUtils } from "erela.js";
-import { LoadType, UnresolvedQuery } from "erela.js/structures/Utils";
-import { Query } from "erela.js/structures/Manager";
-import { UnresolvedTrack } from "erela.js/structures/Player";
+import {
+    Manager,
+    Plugin,
+    TrackUtils,
+    UnresolvedTrack,
+    UnresolvedQuery,
+    LoadType,
+    SearchQuery
+} from "erela.js";
 import Axios from "axios";
 
 const TEMPLATE = [ "clientID", "clientSecret" ];
@@ -31,7 +36,7 @@ export class Spotify extends Plugin {
     private readonly authorization: string;
     private token: string;
     private readonly options: { headers: { Authorization: string; "Content-Type": string } };
-    private _search: (query: string | Query, requester?: unknown) => Promise<SearchResult>;
+    private _search: (query: string | SearchQuery, requester?: unknown) => Promise<SearchResult>;
     private manager: Manager;
     private readonly functions: Record<string, Function>;
 
@@ -67,8 +72,8 @@ export class Spotify extends Plugin {
         manager.search = this.search.bind(this);
     }
 
-    private async search(query: string | Query, requester?: unknown): Promise<SearchResult> {
-        const finalQuery = (query as Query).query || query as string;
+    private async search(query: string | SearchQuery, requester?: unknown): Promise<SearchResult> {
+        const finalQuery = (query as SearchQuery).query || query as string;
         const [, type, id] = finalQuery.match(REGEX) ?? [];
 
         if (type in this.functions) {
@@ -96,20 +101,36 @@ export class Spotify extends Plugin {
     }
 
     private async getAlbumTracks(id: string): Promise<Result> {
-        const { data } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.options);
-        const tracks = data.tracks.items.map(item => Spotify.convertToUnresolved(item));
-        return { tracks, name: data.name };
+        const { data: album } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.options);
+        const tracks = album.tracks.items.map(item => Spotify.convertToUnresolved(item));
+        let next = album.tracks.next;
+
+        while (next) {
+            const { data: nextPage } = await Axios.get<AlbumTracks>(album.tracks.next, this.options);
+            tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item)));
+            next = nextPage.next;
+        }
+
+        return { tracks, name: album.name };
     }
 
     private async getPlaylistTracks(id: string): Promise<Result> {
-        const { data } = await Axios.get<PlaylistItems>(`${BASE_URL}/playlists/${id}`, this.options);
-        const tracks = data.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
-        return { tracks, name: data.name };
+        let { data: playlist } = await Axios.get<Playlist>(`${BASE_URL}/playlists/${id}`, this.options);
+        const tracks = playlist.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
+        let next = playlist.tracks.next;
+
+        while (next !== null) {
+            const { data: nextPage } = await Axios.get<PlaylistTracks>(playlist.tracks.next, this.options);
+            tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item.track)));
+            next = nextPage.next;
+        }
+
+        return { tracks, name: playlist.name };
     }
 
     private async getTrack(id: string): Promise<Result> {
         const { data } = await Axios.get<SpotifyTrack>(`${BASE_URL}/tracks/${id}`, this.options);
-        const track = await Spotify.convertToUnresolved(data);
+        const track = Spotify.convertToUnresolved(data);
         return { tracks: [ track ] };
     }
 
@@ -122,7 +143,7 @@ export class Spotify extends Plugin {
 
         return {
             title: track.name,
-            artist: track.artists[0].name,
+            author: track.artists[0].name,
             duration: track.duration_ms,
         }
     }
@@ -164,24 +185,29 @@ export interface SpotifyOptions {
 
 export interface Album {
     name: string;
-    tracks: {
-        items: SpotifyTrack[];
-    };
+    tracks: AlbumTracks;
+}
+
+export interface AlbumTracks {
+    items: SpotifyTrack[];
+    next: string | null;
 }
 
 export interface Artist {
     name: string;
 }
 
-export interface PlaylistItems {
-    tracks: {
-        items: [
-            {
-                track: SpotifyTrack;
-            }
-        ];
-    };
+export interface Playlist {
+    tracks: PlaylistTracks;
     name: string;
+}
+export interface PlaylistTracks {
+    items: [
+        {
+            track: SpotifyTrack;
+        }
+    ];
+    next: string | null;
 }
 
 export interface SpotifyTrack {
