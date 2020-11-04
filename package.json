@@ -7,7 +7,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && tsc"
+    "build": "rm -rf ./dist && tsc",
+    "publish:stable": "yarn build && yarn publish --access=public"
   },
   "keywords": [
     "erela.js",
@@ -22,6 +23,6 @@
   },
   "dependencies": {
     "axios": "^0.20.0",
-    "erela.js": "2.1.0"
+    "erela.js": "^2.1.0"
   }
 }
