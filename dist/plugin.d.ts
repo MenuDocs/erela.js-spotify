@@ -1,5 +1,4 @@
-import { Manager, Plugin } from "erela.js";
-import { TrackData } from "erela.js/structures/Utils";
+import { Manager, Plugin, UnresolvedTrack } from "erela.js";
 export declare class Spotify extends Plugin {
     private readonly clientID;
     private readonly clientSecret;
@@ -15,12 +14,12 @@ export declare class Spotify extends Plugin {
     private getAlbumTracks;
     private getPlaylistTracks;
     private getTrack;
-    private fetchTrack;
+    private static convertToUnresolved;
     private renewToken;
     private renew;
 }
 export interface Result {
-    tracks: TrackData[];
+    tracks: UnresolvedTrack[];
     name?: string;
 }
 export interface SpotifyOptions {
@@ -29,25 +28,41 @@ export interface SpotifyOptions {
 }
 export interface Album {
     name: string;
-    tracks: {
-        items: SpotifyTrack[];
-    };
+    tracks: AlbumTracks;
+}
+export interface AlbumTracks {
+    items: SpotifyTrack[];
+    next: string | null;
 }
 export interface Artist {
     name: string;
 }
-export interface PlaylistItems {
-    tracks: {
-        items: [
-            {
-                track: SpotifyTrack;
-            }
-        ];
-    };
+export interface Playlist {
+    tracks: PlaylistTracks;
     name: string;
+}
+export interface PlaylistTracks {
+    items: [
+        {
+            track: SpotifyTrack;
+        }
+    ];
+    next: string | null;
 }
 export interface SpotifyTrack {
     artists: Artist[];
     name: string;
     duration_ms: number;
+}
+export interface SearchResult {
+    exception?: {
+        severity: string;
+        message: string;
+    };
+    loadType: string;
+    playlist?: {
+        duration: number;
+        name: string;
+    };
+    tracks: UnresolvedTrack[];
 }

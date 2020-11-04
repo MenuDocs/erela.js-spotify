@@ -24,8 +24,7 @@ const buildSearch = (loadType, tracks, error, name) => ({
     playlist: name ? {
         name,
         duration: tracks
-            .map(track => track.duration)
-            .reduce((acc, cur) => acc + cur, 0)
+            .reduce((acc, cur) => acc + (cur.duration || 0), 0),
     } : null,
     exception: error ? {
         message: error,
@@ -60,10 +59,10 @@ class Spotify extends erela_js_1.Plugin {
         manager.search = this.search.bind(this);
     }
     search(query, requester) {
-        var _a, _b;
+        var _a, _b, _c;
         return __awaiter(this, void 0, void 0, function* () {
             const finalQuery = query.query || query;
-            const [, type, id] = REGEX.test(finalQuery) ? finalQuery.match(REGEX) : [];
+            const [, type, id] = (_a = finalQuery.match(REGEX)) !== null && _a !== void 0 ? _a : [];
             if (type in this.functions) {
                 try {
                     const func = this.functions[type];
@@ -71,14 +70,14 @@ class Spotify extends erela_js_1.Plugin {
                         const data = yield func(id);
                         const loadType = type === "track" ? "TRACK_LOADED" : "PLAYLIST_LOADED";
                         const name = ["playlist", "album"].includes(type) ? data.name : null;
-                        const tracks = data.tracks.map(track => erela_js_1.TrackUtils.build(track, requester));
+                        const tracks = data.tracks.map(track => erela_js_1.TrackUtils.buildUnresolved(track, requester));
                         return buildSearch(loadType, tracks, null, name);
                     }
                     const msg = 'Incorrect type for Spotify URL, must be one of "track", "album", "playlist".';
                     return buildSearch("LOAD_FAILED", null, msg, null);
                 }
                 catch (e) {
-                    return buildSearch((_a = e.loadType) !== null && _a !== void 0 ? _a : "LOAD_FAILED", null, (_b = e.message) !== null && _b !== void 0 ? _b : null, null);
+                    return buildSearch((_b = e.loadType) !== null && _b !== void 0 ? _b : "LOAD_FAILED", null, (_c = e.message) !== null && _c !== void 0 ? _c : null, null);
                 }
             }
             return this._search(query, requester);
@@ -86,75 +85,53 @@ class Spotify extends erela_js_1.Plugin {
     }
     getAlbumTracks(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { data } = yield axios_1.default.get(`${BASE_URL}/albums/${id}`, this.options);
-            const promises = data.tracks.items.map((item) => __awaiter(this, void 0, void 0, function* () { return yield this.fetchTrack(item); }));
-            const tracks = (yield Promise.all(promises)).filter(e => !!e);
-            if (!tracks.length)
-                throw { loadType: "NO_MATCHES" };
-            return {
-                tracks,
-                name: data.name
-            };
+            const { data: album } = yield axios_1.default.get(`${BASE_URL}/albums/${id}`, this.options);
+            const tracks = album.tracks.items.map(item => Spotify.convertToUnresolved(item));
+            let next = album.tracks.next;
+            while (next) {
+                const { data: nextPage } = yield axios_1.default.get(album.tracks.next, this.options);
+                tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item)));
+                next = nextPage.next;
+            }
+            return { tracks, name: album.name };
         });
     }
     getPlaylistTracks(id) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { data } = yield axios_1.default.get(`${BASE_URL}/playlists/${id}`, this.options);
-            const promises = data.tracks.items.map((item) => __awaiter(this, void 0, void 0, function* () { return yield this.fetchTrack(item.track); }));
-            const tracks = (yield Promise.all(promises)).filter(e => !!e);
-            if (!tracks.length)
-                throw { loadType: "NO_MATCHES" };
-            return {
-                tracks,
-                name: data.name
-            };
+            let { data: playlist } = yield axios_1.default.get(`${BASE_URL}/playlists/${id}`, this.options);
+            const tracks = playlist.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
+            let next = playlist.tracks.next;
+            while (next !== null) {
+                const { data: nextPage } = yield axios_1.default.get(playlist.tracks.next, this.options);
+                tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item.track)));
+                next = nextPage.next;
+            }
+            return { tracks, name: playlist.name };
         });
     }
     getTrack(id) {
         return __awaiter(this, void 0, void 0, function* () {
             const { data } = yield axios_1.default.get(`${BASE_URL}/tracks/${id}`, this.options);
-            const track = yield this.fetchTrack(data);
-            if (!track)
-                throw { loadType: "NO_MATCHES" };
+            const track = Spotify.convertToUnresolved(data);
             return { tracks: [track] };
         });
     }
-    fetchTrack(track) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!track)
-                throw new ReferenceError("The Spotify track object was not provided");
-            if (!track.artists)
-                throw new ReferenceError("The track artists array was not provided");
-            if (!track.name)
-                throw new ReferenceError("The track name was not provided");
-            if (!Array.isArray(track.artists))
-                throw new TypeError(`The track artists must be an array, received type ${typeof track.artists}`);
-            if (typeof track.name !== "string")
-                throw new TypeError(`The track name must be a string, received type ${typeof track.name}`);
-            const title = `${track.artists[0].name} - ${track.name}`;
-            const node = this.manager.leastUsedNodes.first();
-            if (!node)
-                throw new Error("No available node.");
-            const { host, port, password, secure } = node.options;
-            const url = `http${secure ? "s" : ""}://${host}:${port}/loadtracks`;
-            const { data } = yield axios_1.default.get(url, {
-                headers: { Authorization: password },
-                params: { identifier: `ytsearch:${title}` }
-            });
-            if (["LOAD_FAILED", "NO_MATCHES"].includes(data.loadType))
-                return null;
-            const regexEscape = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            const originalAudio = data.tracks.filter(searchResult => {
-                return [track.artists[0].name, `${track.artists[0].name} - Topic`].some(channelName => new RegExp(`^${regexEscape(channelName)}$`, "i").test(searchResult.info.author)) ||
-                    new RegExp(`^${regexEscape(track.name)}$`, "i").test(searchResult.info.title);
-            })[0];
-            if (originalAudio)
-                return originalAudio;
-            const sameDuration = data.tracks.filter(searchResult => (searchResult.info.length >= (track.duration_ms - 1500)) && (searchResult.info.length <= (track.duration_ms + 1500)))[0];
-            if (sameDuration)
-                return sameDuration;
-            return data.tracks[0];
-        });
+    static convertToUnresolved(track) {
+        if (!track)
+            throw new ReferenceError("The Spotify track object was not provided");
+        if (!track.artists)
+            throw new ReferenceError("The track artists array was not provided");
+        if (!track.name)
+            throw new ReferenceError("The track name was not provided");
+        if (!Array.isArray(track.artists))
+            throw new TypeError(`The track artists must be an array, received type ${typeof track.artists}`);
+        if (typeof track.name !== "string")
+            throw new TypeError(`The track name must be a string, received type ${typeof track.name}`);
+        return {
+            title: track.name,
+            author: track.artists[0].name,
+            duration: track.duration_ms,
+        };
     }
     renewToken() {
         return __awaiter(this, void 0, void 0, function* () {
