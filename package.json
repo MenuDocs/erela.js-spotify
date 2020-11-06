@@ -23,6 +23,6 @@
   },
   "dependencies": {
     "axios": "^0.20.0",
-    "erela.js": "^2.1.0"
+    "erela.js": "Solaris9/erela.js#build"
   }
 }

@@ -9,7 +9,6 @@ import {
 } from "erela.js";
 import Axios from "axios";
 
-const TEMPLATE = [ "clientID", "clientSecret" ];
 const BASE_URL = "https://api.spotify.com/v1";
 const REGEX = /(?:https:\/\/open\.spotify\.com\/|spotify:)(.+)(?:[\/:])([A-Za-z0-9]+)/;
 
@@ -30,27 +29,63 @@ const buildSearch = (loadType: LoadType, tracks: UnresolvedTrack[], error: strin
     } : null,
 });
 
+const check = (options: SpotifyOptions) => {
+    if (!options) throw new TypeError("SpotifyOptions must not be empty.");
+
+    if (typeof options.clientID !== "string" || !/^.+$/.test(options.clientID))
+        throw new TypeError(
+            'Spotify option "clientID" must be present and be a non-empty string.'
+        );
+
+    if (typeof options.clientSecret !== "string" || !/^.+$/.test(options.clientSecret))
+        throw new TypeError(
+            'Spotify option "clientSecret" must be a non-empty string.'
+        );
+
+    if (
+        typeof options.convertUnresolved !== "undefined" &&
+        typeof options.convertUnresolved !== "boolean"
+    )
+        throw new TypeError(
+            'Spotify option "convertUnresolved" must be a boolean.'
+        );
+
+    if (
+        typeof options.playlistLimit !== "undefined" &&
+        typeof options.playlistLimit !== "number"
+    )
+        throw new TypeError('Spotify option "playlistLimit" must be a number.');
+
+    if (
+        typeof options.albumLimit !== "undefined" &&
+        typeof options.albumLimit !== "number"
+    )
+        throw new TypeError('Spotify option "albumLimit" must be a number.');
+}
+
 export class Spotify extends Plugin {
-    private readonly clientID: string;
-    private readonly clientSecret: string;
     private readonly authorization: string;
     private token: string;
-    private readonly options: { headers: { Authorization: string; "Content-Type": string } };
+    private readonly axiosOptions: { headers: { Authorization: string; "Content-Type": string } };
     private _search: (query: string | SearchQuery, requester?: unknown) => Promise<SearchResult>;
     private manager: Manager;
     private readonly functions: Record<string, Function>;
+    private readonly options: SpotifyOptions;
 
     public constructor(options: SpotifyOptions) {
-        if (!options || !TEMPLATE.every(t => t in options && typeof options[t] === "string"))
-            throw new RangeError('"options" is not an object or does not contain properties "clientID" and "clientSecret" of type "string".');
-
         super();
-
-        this.clientID = options.clientID;
-        this.clientSecret = options.clientSecret;
-        this.authorization = Buffer.from(`${this.clientID}:${this.clientSecret}`).toString("base64");
-        this.token = "";
+        check(options);
         this.options = {
+            playlistLimit: 5,
+            albumLimit: 1,
+            ...options
+        }
+
+        this.token = "";
+        this.authorization = Buffer.from(
+            `${this.options.clientID}:${this.options.clientSecret}`
+        ).toString("base64");
+        this.axiosOptions = {
             headers: {
                 "Content-Type": "application/json",
                 Authorization: this.token
@@ -85,12 +120,16 @@ export class Spotify extends Plugin {
 
                     const loadType = type === "track" ? "TRACK_LOADED" : "PLAYLIST_LOADED";
                     const name = ["playlist", "album"].includes(type) ? data.name : null;
-                    const tracks = data.tracks.map(track => TrackUtils.buildUnresolved(track, requester));
+                    const tracks = data.tracks.map(query =>  {
+                        const track = TrackUtils.buildUnresolved(query, requester);
+                        if (this.options.convertUnresolved) track.resolve();
+                        return track
+                    });
 
                     return buildSearch(loadType, tracks, null, name);
                 }
 
-                const msg = 'Incorrect type for Spotify URL, must be one of "track", "album", "playlist".';
+                const msg = 'Incorrect type for Spotify URL, must be one of "track", "album" or "playlist".';
                 return buildSearch("LOAD_FAILED", null, msg, null);
             } catch (e) {
                 return buildSearch(e.loadType ?? "LOAD_FAILED", null, e.message ?? null, null);
@@ -101,37 +140,39 @@ export class Spotify extends Plugin {
     }
 
     private async getAlbumTracks(id: string): Promise<Result> {
-        const { data: album } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.options);
+        const { data: album } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.axiosOptions);
         const tracks = album.tracks.items.map(item => Spotify.convertToUnresolved(item));
-        let next = album.tracks.next;
+        let next = album.tracks.next, requests = 1;
 
-        while (next) {
-            const { data: nextPage } = await Axios.get<AlbumTracks>(album.tracks.next, this.options);
+        while (next && requests < this.options.albumLimit) {
+            const { data: nextPage } = await Axios.get<AlbumTracks>(next, this.axiosOptions);
             tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item)));
             next = nextPage.next;
+            requests++;
         }
 
         return { tracks, name: album.name };
     }
 
     private async getPlaylistTracks(id: string): Promise<Result> {
-        let { data: playlist } = await Axios.get<Playlist>(`${BASE_URL}/playlists/${id}`, this.options);
+        let { data: playlist } = await Axios.get<Playlist>(`${BASE_URL}/playlists/${id}`, this.axiosOptions);
         const tracks = playlist.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
-        let next = playlist.tracks.next;
+        let next = playlist.tracks.next, requests = 1;
 
-        while (next !== null) {
-            const { data: nextPage } = await Axios.get<PlaylistTracks>(playlist.tracks.next, this.options);
+        while (next && requests < this.options.playlistLimit) {
+            const { data: nextPage } = await Axios.get<PlaylistTracks>(next, this.axiosOptions);
             tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item.track)));
             next = nextPage.next;
+            requests++;
         }
 
         return { tracks, name: playlist.name };
     }
 
     private async getTrack(id: string): Promise<Result> {
-        const { data } = await Axios.get<SpotifyTrack>(`${BASE_URL}/tracks/${id}`, this.options);
+        const { data } = await Axios.get<SpotifyTrack>(`${BASE_URL}/tracks/${id}`, this.axiosOptions);
         const track = Spotify.convertToUnresolved(data);
-        return { tracks: [ track ] };
+        return { tracks: [track] };
     }
 
     private static convertToUnresolved(track: SpotifyTrack): UnresolvedQuery {
@@ -149,7 +190,7 @@ export class Spotify extends Plugin {
     }
 
     private async renewToken(): Promise<number> {
-        const { data: { access_token, expires_in }} = await Axios.post(
+        const { data: { access_token, expires_in } } = await Axios.post(
             "https://accounts.spotify.com/api/token",
             "grant_type=client_credentials",
             {
@@ -163,7 +204,7 @@ export class Spotify extends Plugin {
         if (!access_token) throw new Error("Invalid Spotify client.");
 
         this.token = `Bearer ${access_token}`;
-        this.options.headers.Authorization = this.token;
+        this.axiosOptions.headers.Authorization = this.token;
 
         return expires_in * 1000;
     }
@@ -173,14 +214,23 @@ export class Spotify extends Plugin {
     }
 }
 
-export interface Result {
-    tracks: UnresolvedTrack[];
-    name?: string;
-}
-
 export interface SpotifyOptions {
     clientID: string;
     clientSecret: string;
+    /** Amount of pages to load, each page having 100 tracks. Defaults to 5. */
+    playlistLimit?: number
+    /** Amount of pages to load, each page having 50 tracks. Defaults to 1. */
+    albumLimit?: number
+    /**
+     * Whether to convert UnresolvedTracks to Track. Defaults to false.
+     * **Note: This is** ***not*** **recommended as it spams YouTube and takes a while if a large playlist is loaded.**
+     */
+    convertUnresolved?: boolean
+}
+
+export interface Result {
+    tracks: UnresolvedQuery[];
+    name?: string;
 }
 
 export interface Album {
@@ -201,6 +251,7 @@ export interface Playlist {
     tracks: PlaylistTracks;
     name: string;
 }
+
 export interface PlaylistTracks {
     items: [
         {
