@@ -53,23 +53,48 @@ npm install erela.js-spotify
 yarn add erela.js-spotify
 ```
 
+## Options
+
+- ### clientID
+> The Spotify client ID. \
+> This is **required** to use this plugin.
+
+- ### clientSecret
+> The Spotify client secret. \
+> This is **required** to use this plugin.
+
+- ### playlistLimit
+> The amount of pages to load when a playlist is searched with each page having 100 tracks. \
+> By default this retrieves all tracks in the playlist. \
+> Note: This must be 1 or higher, 0 will load all.
+
+- ### albumLimit
+> The amount of pages to load when an album is searched with each page having 50 tracks. \
+> By default this retrieves all tracks on the album. \
+> Note: This must be 1 or higher, 0 will load all.
+
+- ### convertUnresolved
+> Converts all UnresolvedTracks into a Track. \
+> **NOTE: THIS IS NOT RECOMMENDED AS IT WILL ATTEMPT TO CONVERT EVERY TRACK, INCLUDING ALBUMS AND PLAYLISTS TRACKS.** \
+> **DEPENDING ON THE AMOUNT THIS WILL TAKE A WHILE AND MAY RATELIMIT YOUR LAVALINK NODE.**
+
 ## Example Usage
-
-<h3>Note:</h3>
-
-> This assumes you already have Erela.JS setup. Refer to the <a href="#documentation--guides">guides</a> to start.
->
-> This is also part of the code, it only shows using the plugin.
 
 ```javascript
 const { Manager } = require("erela.js");
 const Spotify  = require("erela.js-spotify");
 
-const clientID = ""; // clientID from your Spotify app
-const clientSecret = ""; // clientSecret from your Spotify app
+const clientID = "example ID"; // clientID from your Spotify app
+const clientSecret = "example secret"; // clientSecret from your Spotify app
 
 const manager = new Manager({
-  plugins: [ new Spotify({ clientID, clientSecret }) ]
+  plugins: [
+    // Initiate the plugin and pass the two required options.
+    new Spotify({
+      clientID,
+      clientSecret
+    })
+  ]
 });
 
 manager.search("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");

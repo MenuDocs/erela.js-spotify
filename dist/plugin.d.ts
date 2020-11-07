@@ -20,9 +20,9 @@ export declare class Spotify extends Plugin {
 export interface SpotifyOptions {
     clientID: string;
     clientSecret: string;
-    /** Amount of pages to load, each page having 100 tracks. Defaults to 5. */
+    /** Amount of pages to load, each page having 100 tracks. */
     playlistLimit?: number;
-    /** Amount of pages to load, each page having 50 tracks. Defaults to 1. */
+    /** Amount of pages to load, each page having 50 tracks. */
     albumLimit?: number;
     /**
      * Whether to convert UnresolvedTracks to Track. Defaults to false.

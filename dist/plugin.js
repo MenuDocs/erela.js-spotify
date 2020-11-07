@@ -51,7 +51,7 @@ class Spotify extends erela_js_1.Plugin {
     constructor(options) {
         super();
         check(options);
-        this.options = Object.assign({ playlistLimit: 5, albumLimit: 1 }, options);
+        this.options = Object.assign({}, options);
         this.token = "";
         this.authorization = Buffer.from(`${this.options.clientID}:${this.options.clientSecret}`).toString("base64");
         this.axiosOptions = {
@@ -106,12 +106,12 @@ class Spotify extends erela_js_1.Plugin {
         return __awaiter(this, void 0, void 0, function* () {
             const { data: album } = yield axios_1.default.get(`${BASE_URL}/albums/${id}`, this.axiosOptions);
             const tracks = album.tracks.items.map(item => Spotify.convertToUnresolved(item));
-            let next = album.tracks.next, requests = 1;
-            while (next && requests < this.options.albumLimit) {
+            let next = album.tracks.next, page = 1;
+            while (next && !this.options.playlistLimit ? true : page < this.options.albumLimit) {
                 const { data: nextPage } = yield axios_1.default.get(next, this.axiosOptions);
                 tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item)));
                 next = nextPage.next;
-                requests++;
+                page++;
             }
             return { tracks, name: album.name };
         });
@@ -120,12 +120,12 @@ class Spotify extends erela_js_1.Plugin {
         return __awaiter(this, void 0, void 0, function* () {
             let { data: playlist } = yield axios_1.default.get(`${BASE_URL}/playlists/${id}`, this.axiosOptions);
             const tracks = playlist.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
-            let next = playlist.tracks.next, requests = 1;
-            while (next && requests < this.options.playlistLimit) {
+            let next = playlist.tracks.next, page = 1;
+            while (next && !this.options.playlistLimit ? true : page < this.options.playlistLimit) {
                 const { data: nextPage } = yield axios_1.default.get(next, this.axiosOptions);
                 tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item.track)));
                 next = nextPage.next;
-                requests++;
+                page++;
             }
             return { tracks, name: playlist.name };
         });

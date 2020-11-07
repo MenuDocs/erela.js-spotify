@@ -1,6 +1,6 @@
 {
   "name": "erela.js-spotify",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Spotify plugin for Erela.JS",
   "main": "dist/index.js",
   "files": [
@@ -23,6 +23,6 @@
   },
   "dependencies": {
     "axios": "^0.20.0",
-    "erela.js": "Solaris9/erela.js#build"
+    "erela.js": "^2.2.0"
   }
 }
