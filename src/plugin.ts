@@ -76,8 +76,6 @@ export class Spotify extends Plugin {
         super();
         check(options);
         this.options = {
-            playlistLimit: 5,
-            albumLimit: 1,
             ...options
         }
 
@@ -142,13 +140,13 @@ export class Spotify extends Plugin {
     private async getAlbumTracks(id: string): Promise<Result> {
         const { data: album } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.axiosOptions);
         const tracks = album.tracks.items.map(item => Spotify.convertToUnresolved(item));
-        let next = album.tracks.next, requests = 1;
+        let next = album.tracks.next, page = 1;
 
-        while (next && requests < this.options.albumLimit) {
+        while (next && !this.options.playlistLimit ? true : page < this.options.albumLimit) {
             const { data: nextPage } = await Axios.get<AlbumTracks>(next, this.axiosOptions);
             tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item)));
             next = nextPage.next;
-            requests++;
+            page++;
         }
 
         return { tracks, name: album.name };
@@ -157,13 +155,13 @@ export class Spotify extends Plugin {
     private async getPlaylistTracks(id: string): Promise<Result> {
         let { data: playlist } = await Axios.get<Playlist>(`${BASE_URL}/playlists/${id}`, this.axiosOptions);
         const tracks = playlist.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
-        let next = playlist.tracks.next, requests = 1;
+        let next = playlist.tracks.next, page = 1;
 
-        while (next && requests < this.options.playlistLimit) {
+        while (next && !this.options.playlistLimit ? true : page < this.options.playlistLimit) {
             const { data: nextPage } = await Axios.get<PlaylistTracks>(next, this.axiosOptions);
             tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item.track)));
             next = nextPage.next;
-            requests++;
+            page++;
         }
 
         return { tracks, name: playlist.name };
@@ -217,9 +215,9 @@ export class Spotify extends Plugin {
 export interface SpotifyOptions {
     clientID: string;
     clientSecret: string;
-    /** Amount of pages to load, each page having 100 tracks. Defaults to 5. */
+    /** Amount of pages to load, each page having 100 tracks. */
     playlistLimit?: number
-    /** Amount of pages to load, each page having 50 tracks. Defaults to 1. */
+    /** Amount of pages to load, each page having 50 tracks. */
     albumLimit?: number
     /**
      * Whether to convert UnresolvedTracks to Track. Defaults to false.
