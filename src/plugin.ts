@@ -10,7 +10,7 @@ import {
 import Axios from "axios";
 
 const BASE_URL = "https://api.spotify.com/v1";
-const REGEX = /(?:https:\/\/open\.spotify\.com\/|spotify:)(.+)(?:[\/:])([A-Za-z0-9]+)/;
+const REGEX = /(?:https:\/\/open\.spotify\.com\/|spotify:)(?:.+)?(track|playlist|album)[\/:]([A-Za-z0-9]+)/;
 
 const buildSearch = (loadType: LoadType, tracks: UnresolvedTrack[], error: string, name: string): SearchResult => ({
     loadType: loadType,
@@ -118,11 +118,20 @@ export class Spotify extends Plugin {
 
                     const loadType = type === "track" ? "TRACK_LOADED" : "PLAYLIST_LOADED";
                     const name = ["playlist", "album"].includes(type) ? data.name : null;
+
                     const tracks = data.tracks.map(query =>  {
                         const track = TrackUtils.buildUnresolved(query, requester);
-                        if (this.options.convertUnresolved) track.resolve();
-                        return track
-                    });
+
+                        if (this.options.convertUnresolved) {
+                            try {
+                                track.resolve();
+                            } catch {
+                                return null;
+                            }
+                        }
+
+                        return track;
+                    }).filter(track => !!track);
 
                     return buildSearch(loadType, tracks, null, name);
                 }
