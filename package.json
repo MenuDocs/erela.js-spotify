@@ -23,6 +23,6 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
-    "erela.js": "^2.2.0"
+    "erela.js": "latest"
   }
 }
