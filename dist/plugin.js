@@ -16,7 +16,7 @@ exports.Spotify = void 0;
 const erela_js_1 = require("erela.js");
 const axios_1 = __importDefault(require("axios"));
 const BASE_URL = "https://api.spotify.com/v1";
-const REGEX = /(?:https:\/\/open\.spotify\.com\/|spotify:)(.+)(?:[\/:])([A-Za-z0-9]+)/;
+const REGEX = /(?:https:\/\/open\.spotify\.com\/|spotify:)(?:.+)?(track|playlist|album)[\/:]([A-Za-z0-9]+)/;
 const buildSearch = (loadType, tracks, error, name) => ({
     loadType: loadType,
     tracks: tracks !== null && tracks !== void 0 ? tracks : [],
@@ -86,10 +86,16 @@ class Spotify extends erela_js_1.Plugin {
                         const name = ["playlist", "album"].includes(type) ? data.name : null;
                         const tracks = data.tracks.map(query => {
                             const track = erela_js_1.TrackUtils.buildUnresolved(query, requester);
-                            if (this.options.convertUnresolved)
-                                track.resolve();
+                            if (this.options.convertUnresolved) {
+                                try {
+                                    track.resolve();
+                                }
+                                catch (_a) {
+                                    return null;
+                                }
+                            }
                             return track;
-                        });
+                        }).filter(track => !!track);
                         return buildSearch(loadType, tracks, null, name);
                     }
                     const msg = 'Incorrect type for Spotify URL, must be one of "track", "album" or "playlist".';
