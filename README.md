@@ -1,6 +1,6 @@
 <div align = "center">
-    <a href="https://discord.gg/D6FXw55">
-<img src="https://img.shields.io/discord/653436871858454538?color=7289DA&label=Support&logo=discord&style=for-the-badge" alt="Discord">
+    <a href="https://discord.gg/menudocs">
+<img src="https://img.shields.io/discord/416512197590777857?color=7289DA&label=Support&logo=discord&style=for-the-badge" alt="Discord">
 </a> 
 
 <a href="https://www.npmjs.com/package/erela.js-spotify">
@@ -13,12 +13,12 @@
 
 <br>
 
-<a href="https://github.com/Solaris9/erela.js-spotify">
-<img src="https://img.shields.io/github/stars/Solaris9/erela.js-spotify?color=333&logo=github&style=for-the-badge" alt="Github stars">
+<a href="https://github.com/MenuDocs/erela.js-spotify">
+<img src="https://img.shields.io/github/stars/MenuDocs/erela.js-spotify?color=333&logo=github&style=for-the-badge" alt="Github stars">
 </a>
 
-<a href="https://github.com/Solaris9/erela.js-spotify/blob/master/LICENSE">
-<img src="https://img.shields.io/github/license/Solaris9/erela.js-spotify?color=6e5494&logo=github&style=for-the-badge" alt="License">
+<a href="https://github.com/MenuDocs/erela.js-spotify/blob/master/LICENSE">
+<img src="https://img.shields.io/github/license/MenuDocs/erela.js-spotify?color=6e5494&logo=github&style=for-the-badge" alt="License">
 </a>
 <hr>
 </div>
