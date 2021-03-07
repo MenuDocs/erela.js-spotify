@@ -148,12 +148,12 @@ export class Spotify extends Plugin {
 
     private async getAlbumTracks(id: string): Promise<Result> {
         const { data: album } = await Axios.get<Album>(`${BASE_URL}/albums/${id}`, this.axiosOptions);
-        const tracks = album.tracks.items.map(item => Spotify.convertToUnresolved(item));
+        const tracks = album.tracks.items.filter(Boolean).map(item => Spotify.convertToUnresolved(item));
         let next = album.tracks.next, page = 1;
 
         while (next && !this.options.playlistLimit ? true : page < this.options.albumLimit) {
             const { data: nextPage } = await Axios.get<AlbumTracks>(next, this.axiosOptions);
-            tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item)));
+            tracks.push(...nextPage.items.filter(Boolean).map(item => Spotify.convertToUnresolved(item)));
             next = nextPage.next;
             page++;
         }
@@ -163,12 +163,12 @@ export class Spotify extends Plugin {
 
     private async getPlaylistTracks(id: string): Promise<Result> {
         let { data: playlist } = await Axios.get<Playlist>(`${BASE_URL}/playlists/${id}`, this.axiosOptions);
-        const tracks = playlist.tracks.items.map(item => Spotify.convertToUnresolved(item.track));
+        const tracks = playlist.tracks.items.filter(Boolean).map(item => Spotify.convertToUnresolved(item.track));
         let next = playlist.tracks.next, page = 1;
 
         while (next && !this.options.playlistLimit ? true : page < this.options.playlistLimit) {
             const { data: nextPage } = await Axios.get<PlaylistTracks>(next, this.axiosOptions);
-            tracks.push(...nextPage.items.map(item => Spotify.convertToUnresolved(item.track)));
+            tracks.push(...nextPage.items.filter(Boolean).map(item => Spotify.convertToUnresolved(item.track)));
             next = nextPage.next;
             page++;
         }
