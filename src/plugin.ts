@@ -193,6 +193,7 @@ export class Spotify extends Plugin {
             title: track.name,
             author: track.artists[0].name,
             duration: track.duration_ms,
+            spotifyUri: track.external_urls.spotify,
         }
     }
 
