@@ -193,21 +193,11 @@ export class Spotify extends Plugin {
     }
 
     private static convertToUnresolved(track: SpotifyTrack): UnresolvedQuery {
-        if (!track) {
-            throw new ReferenceError("The Spotify track object was not provided");
-        }
-        if (!track.artists) {
-            throw new ReferenceError("The track artists array was not provided");
-        }
-        if (!track.name) {
-            throw new ReferenceError("The track name was not provided");
-        }
-        if (!Array.isArray(track.artists)) {
-            throw new TypeError(`The track artists must be an array, received type ${typeof track.artists}`);
-        }
-        if (typeof track.name !== "string") {
-            throw new TypeError(`The track name must be a string, received type ${typeof track.name}`);
-        }
+        if (!track) throw new ReferenceError("The Spotify track object was not provided");
+        if (!track.artists) throw new ReferenceError("The track artists array was not provided");
+        if (!track.name) throw new ReferenceError("The track name was not provided");
+        if (!Array.isArray(track.artists)) throw new TypeError(`The track artists must be an array, received type ${typeof track.artists}`);
+        if (typeof track.name !== "string") throw new TypeError(`The track name must be a string, received type ${typeof track.name}`);
 
         return {
             title: track.name,
