@@ -158,12 +158,13 @@ export class Spotify extends Plugin {
 
     private async getAlbumTracks(id: string): Promise<Result> {
         const album = await this.makeRequest<Album>(`${BASE_URL}/albums/${id}`)
-        const tracks = album.tracks.items.filter((item) => item !== undefined || item !== null).map(item => Spotify.convertToUnresolved(item));
+        const tracks = this.filterNullOrUndefinedTracks(album);
         let next = album.tracks.next, page = 1;
 
         while (next && !this.options.playlistLimit ? true : page < this.options.albumLimit) {
             const nextPage = await this.makeRequest<AlbumTracks>(next);
-            tracks.push(...nextPage.items.filter((item) => item !== undefined || item !== null).map(item => Spotify.convertToUnresolved(item)));
+            let trackData = this.filterNullOrUndefinedTracks(undefined, nextPage)
+            tracks.push(...trackData);
             next = nextPage.next;
             page++;
         }
@@ -173,16 +174,13 @@ export class Spotify extends Plugin {
 
     private async getPlaylistTracks(id: string): Promise<Result> {
         const playlist = await this.makeRequest<Playlist>(`${BASE_URL}/playlists/${id}`);
-        const tracks = playlist.tracks.items.filter((item) =>
-        item.track !== undefined || item.track !== null
-        ).map(item => Spotify.convertToUnresolved(item.track));
+        const tracks = this.filterNullOrUndefinedTracks(playlist);
         let next = playlist.tracks.next, page = 1;
 
         while (next && !this.options.playlistLimit ? true : page < this.options.playlistLimit) {
             const nextPage = await this.makeRequest<PlaylistTracks>(next);
-            tracks.push(...nextPage.items.filter((item) =>
-                item.track !== undefined || item.track !== null
-            ).map(item => Spotify.convertToUnresolved(item.track)));
+            let trackData = this.filterNullOrUndefinedTracks(undefined, nextPage)
+            tracks.push(...trackData);
             next = nextPage.next;
             page++;
         }
@@ -229,6 +227,40 @@ export class Spotify extends Plugin {
         const expiresIn = await this.renewToken();
         setTimeout(() => this.renew(), expiresIn);
     }
+
+    private filterNullOrUndefinedTracks(PlaylistOrAlbum?: Playlist | Album | undefined, PlaylistTracksOrAlbumTracks?: PlaylistTracks | AlbumTracks) {
+        let tracks: UnresolvedQuery[];
+        const isPlaylistTrack = (param: PlaylistTracks | AlbumTracks): param is PlaylistTracks => 'track' in param.items
+
+        if(isPlaylistTrack(PlaylistTracksOrAlbumTracks)) {
+            tracks = PlaylistTracksOrAlbumTracks.items
+                .filter((e) => e !== null || e !== undefined || !e)
+                .map((e) => Spotify.convertToUnresolved(e.track));
+
+        } else if (!isPlaylistTrack(PlaylistTracksOrAlbumTracks)) {
+               tracks = PlaylistTracksOrAlbumTracks.items
+					.filter((e) => e !== null || e !== undefined || !e)
+					.map((e) => Spotify.convertToUnresolved(e)); 
+        }
+
+        if (!PlaylistOrAlbum) {
+            return
+        }
+
+        const isPlaylist = (param: Playlist | Album): param is Playlist =>
+					'track' in param.tracks.items;
+        if (isPlaylist(PlaylistOrAlbum)) {
+            tracks = PlaylistOrAlbum.tracks.items
+                .filter((e) => e !== null || e !== undefined || !e)
+                .map((e) => Spotify.convertToUnresolved(e.track))
+        } else if(!isPlaylist(PlaylistOrAlbum)) {
+            tracks = PlaylistOrAlbum.tracks.items
+                .filter((e) => e !== null || e !== undefined || !e)
+                .map((e) => Spotify.convertToUnresolved(e)
+            )
+        }
+        return tracks
+    }
 }
 
 export interface SpotifyOptions {
@@ -270,13 +302,10 @@ export interface Playlist {
 }
 
 export interface PlaylistTracks {
-    items: [
-        {
-            track: SpotifyTrack;
-        }
-    ];
+    items: { track: SpotifyTrack }[]
     next: string | null;
 }
+
 
 export interface SpotifyTrack {
     artists: Artist[];
@@ -285,14 +314,18 @@ export interface SpotifyTrack {
 }
 
 export interface SearchResult {
-    exception?: {
-        severity: string;
-        message: string
-    };
+    exception?: SearchException;
     loadType: string;
-    playlist?: {
-        duration: number;
-        name: string
-    };
+    playlist?: PlaylistInfo
     tracks: UnresolvedTrack[]
+}
+
+export interface SearchException {
+    severity: string;
+    message: string;
+}
+
+export interface PlaylistInfo {
+    duration: number;
+    name: string
 }
