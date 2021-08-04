@@ -117,7 +117,7 @@ export class Spotify extends Plugin {
 
     private async search(query: string | SearchQuery, requester?: unknown): Promise<SearchResult> {
         const finalQuery = (query as SearchQuery).query || query as string;
-        const [ , type, id ] = finalQuery.match(REGEX) ?? [];
+        const [ , type, id ] = finalQuery.split("?si=")[0].match(REGEX) ?? [];
 
         if (type in this.functions) {
             try {
