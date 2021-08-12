@@ -158,12 +158,12 @@ export class Spotify extends Plugin {
 
     private async getAlbumTracks(id: string): Promise<Result> {
         const album = await this.makeRequest<Album>(`${BASE_URL}/albums/${id}`)
-        const tracks = album.tracks.items.filter((e) => this.filterNullOrUndefined(e)).map(item => Spotify.convertToUnresolved(item));
+        const tracks = album.tracks.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item));
         let next = album.tracks.next, page = 1;
 
         while (next && !this.options.playlistLimit ? true : page < this.options.albumLimit) {
             const nextPage = await this.makeRequest<AlbumTracks>(next);
-            tracks.push(...nextPage.items.filter((e) => this.filterNullOrUndefined(e)).map(item => Spotify.convertToUnresolved(item)));
+            tracks.push(...nextPage.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item)));
             next = nextPage.next;
             page++;
         }
@@ -173,12 +173,12 @@ export class Spotify extends Plugin {
 
     private async getPlaylistTracks(id: string): Promise<Result> {
         const playlist = await this.makeRequest<Playlist>(`${BASE_URL}/playlists/${id}`);
-        const tracks = playlist.tracks.items.filter((e) => this.filterNullOrUndefined(e)).map(item => Spotify.convertToUnresolved(item.track));
+        const tracks = playlist.tracks.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item.track));
         let next = playlist.tracks.next, page = 1;
 
         while (next && !this.options.playlistLimit ? true : page < this.options.playlistLimit) {
             const nextPage = await this.makeRequest<PlaylistTracks>(next);
-            tracks.push(...nextPage.items.filter((e) => this.filterNullOrUndefined(e)).map(item => Spotify.convertToUnresolved(item.track)));
+            tracks.push(...nextPage.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item.track)));
             next = nextPage.next;
             page++;
         }
@@ -226,7 +226,7 @@ export class Spotify extends Plugin {
         setTimeout(() => this.renew(), expiresIn);
     }
 
-    private filterNullOrUndefined(value: unknown): value is null | undefined {
+    private filterNullOrUndefined(value: unknown): value is unknown {
         return typeof value !== 'undefined' ? value !== null : typeof value !== 'undefined';
     }
 }
