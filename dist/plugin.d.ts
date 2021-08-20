@@ -1,14 +1,14 @@
-import { Manager, Plugin, UnresolvedTrack, UnresolvedQuery } from "erela.js";
+import { Manager, Plugin, UnresolvedTrack, UnresolvedQuery, ModifyRequest } from "erela.js";
 export declare class Spotify extends Plugin {
     private readonly authorization;
     private token;
-    private readonly axiosOptions;
     private _search;
     private manager;
     private readonly functions;
     private readonly options;
     constructor(options: SpotifyOptions);
     load(manager: Manager): void;
+    makeRequest<T>(endpoint: string, modify?: ModifyRequest): Promise<T>;
     private search;
     private getAlbumTracks;
     private getPlaylistTracks;
@@ -16,6 +16,7 @@ export declare class Spotify extends Plugin {
     private static convertToUnresolved;
     private renewToken;
     private renew;
+    private filterNullOrUndefined;
 }
 export interface SpotifyOptions {
     clientID: string;
