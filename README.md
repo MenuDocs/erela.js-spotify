@@ -33,9 +33,9 @@ This a plugin for Erela.JS to allow the use of Spotify URL's, it uses direct URL
 
 It is recommended to read the documentation to start, and the guides to use the plugin.
 
-- [Documentation](http://projects.solaris.codes/erelajs/docs/gettingstarted.html 'Erela.js Documentation') 
+- [Documentation](https://solaris-site.netlify.app/projects/erelajs/docs/gettingstarted.html "Erela.js Documentation") 
 
-- [Guides](http://projects.solaris.codes/erelajs/guides/introduction.html 'Erela.js Guides')
+- [Guides](https://solaris-site.netlify.app/projects/erelajs/guides/introduction.html 'Erela.js Guides')
 
 ## Prerequisites
 
