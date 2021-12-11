@@ -157,7 +157,7 @@ export class Spotify extends Plugin {
     }
 
     private async getAlbumTracks(id: string): Promise<Result> {
-        const album = await this.makeRequest<Album>(`${BASE_URL}/albums/${id}`)
+        const album = await this.makeRequest<Album>(`albums/${id}`)
         const tracks = album.tracks.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item));
         let next = album.tracks.next, page = 1;
 
@@ -172,7 +172,7 @@ export class Spotify extends Plugin {
     }
 
     private async getPlaylistTracks(id: string): Promise<Result> {
-        const playlist = await this.makeRequest<Playlist>(`${BASE_URL}/playlists/${id}`);
+        const playlist = await this.makeRequest<Playlist>(`playlists/${id}`);
         const tracks = playlist.tracks.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item.track));
         let next = playlist.tracks.next, page = 1;
 
@@ -187,7 +187,7 @@ export class Spotify extends Plugin {
     }
 
     private async getTrack(id: string): Promise<Result> {
-        const data = await this.makeRequest<SpotifyTrack>(`${BASE_URL}/tracks/${id}`);
+        const data = await this.makeRequest<SpotifyTrack>(`tracks/${id}`);
         const track = Spotify.convertToUnresolved(data);
         return { tracks: [ track ] };
     }
