@@ -68,7 +68,7 @@ class Spotify extends erela_js_1.Plugin {
         manager.search = this.search.bind(this);
     }
     makeRequest(endpoint, modify = () => void 0) {
-        const req = petitio_1.default(`${BASE_URL}${/^\//.test(endpoint) ? endpoint : `/${endpoint}`}`)
+        const req = (0, petitio_1.default)(`${BASE_URL}${/^\//.test(endpoint) ? endpoint : `/${endpoint}`}`)
             .header("Authorization", this.token);
         modify(req);
         return req.json();
@@ -107,7 +107,7 @@ class Spotify extends erela_js_1.Plugin {
         return this._search(query, requester);
     }
     async getAlbumTracks(id) {
-        const album = await this.makeRequest(`${BASE_URL}/albums/${id}`);
+        const album = await this.makeRequest(`albums/${id}`);
         const tracks = album.tracks.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item));
         let next = album.tracks.next, page = 1;
         while (next && !this.options.playlistLimit ? true : page < this.options.albumLimit) {
@@ -119,7 +119,7 @@ class Spotify extends erela_js_1.Plugin {
         return { tracks, name: album.name };
     }
     async getPlaylistTracks(id) {
-        const playlist = await this.makeRequest(`${BASE_URL}/playlists/${id}`);
+        const playlist = await this.makeRequest(`playlists/${id}`);
         const tracks = playlist.tracks.items.filter(this.filterNullOrUndefined).map(item => Spotify.convertToUnresolved(item.track));
         let next = playlist.tracks.next, page = 1;
         while (next && !this.options.playlistLimit ? true : page < this.options.playlistLimit) {
@@ -131,7 +131,7 @@ class Spotify extends erela_js_1.Plugin {
         return { tracks, name: playlist.name };
     }
     async getTrack(id) {
-        const data = await this.makeRequest(`${BASE_URL}/tracks/${id}`);
+        const data = await this.makeRequest(`tracks/${id}`);
         const track = Spotify.convertToUnresolved(data);
         return { tracks: [track] };
     }
@@ -153,7 +153,7 @@ class Spotify extends erela_js_1.Plugin {
         };
     }
     async renewToken() {
-        const { access_token, expires_in } = await petitio_1.default("https://accounts.spotify.com/api/token", "POST")
+        const { access_token, expires_in } = await (0, petitio_1.default)("https://accounts.spotify.com/api/token", "POST")
             .query("grant_type", "client_credentials")
             .header("Authorization", `Basic ${this.authorization}`)
             .header("Content-Type", "application/x-www-form-urlencoded")
