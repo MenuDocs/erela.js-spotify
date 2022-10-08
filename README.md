@@ -1,3 +1,14 @@
+# Archived!  
+
+`erela.js-spotify` has been archived! Lavalink has recently added plugins which are significantly better and can interact directly with lavalink's code.
+
+## What can we use instead?
+
+The [LavaSrc](https://github.com/TopiSenpai/LavaSrc) Plugin by TopiSenpai (a lavalink maintainer) adds support for Spotify, Apple Music, and Deezer searching.
+
+His implementation is significantly better than basically every erela.js plugin so don't worry!
+
+<!--
 <div align = "center">
     <a href="https://discord.gg/menudocs">
 <img src="https://img.shields.io/discord/416512197590777857?color=7289DA&label=Support&logo=discord&style=for-the-badge" alt="Discord">
@@ -99,3 +110,4 @@ const manager = new Manager({
 
 manager.search("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
 ```
+--!>
